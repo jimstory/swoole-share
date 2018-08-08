@@ -23,14 +23,33 @@ Swoole-2.x [安装要求](https://wiki.swoole.com/wiki/page/7.html)：
 2. gcc4.4 以上版本(gcc -v 查看自己版本)
 3. Linux 内核版本 2.3.32 以上(uname -r 查看内核版本)
 
-采坑总结：
-1. [协程拓展冲突](https://wiki.swoole.com/wiki/page/851.html)，建议swoole 使用自己php 配置文件
-2. 框架中使用swoole，PDO 超时关闭，致使数据库操作失败，[建议封装mysql 连接池](https://github.com/buyingfei/swoole-share/blob/master/pool/swoole-mysql-pool.php)，封装自己数据库操作，保证断线mysql重连 
-3. [禁止使用exit/die](https://wiki.swoole.com/wiki/page/501.html),建议使用try-catch 捕捉异常
 
 性能测试:
 - swoole、nginx、Golang  web 性能比较**100 个并发，100万http请求基准测试**
 - swoole、swoole （mysql 线程池）、nginx + fastCGI + php  QPS性能比较
+```bash
+#swoole、nginx、Golang  web 性能比较
+# nginx helloworld 测试
+ab -c 100 -n 1000000 -k http://127.0.0.1:9508/
+# golang hello，world 测试
+ab -c 100 -n 1000000 -k http://127.0.0.1:8080/
+# swoole helloworld 测试
+php http-server.php > /dev/null 2>&1
+ab -c 100 -n 1000000 -k http://127.0.0.1:9505/
+
+#swoole、swoole （mysql 线程池）、nginx + fastCGI + php
+
+#swoole 同步mysql
+php swoole-mysql.php > /dev/null 2>&1
+ab -c 2000 -n 20000 http://192.168.132.128:9502/
+
+#swoole mysql 线程池
+php swoole-mysql-pool.php > /dev/null 2>&1
+ab -c 2000 -n 20000 http://192.168.132.128:9501/
+#nginx + fastCGI
+ab -c 2000 -n 20000 http://192.168.132.128:9508/pool/sync-mysql.php
+```
+
 
 swoole web 并发 远远大于 nginx + fastCGI 原因分析：
 
@@ -47,5 +66,9 @@ swoole web 并发 远远大于 nginx + fastCGI 原因分析：
 Accept保护，同步模式下一个TCP服务器最大能接受 进程数+Backlog 个TCP连接。一旦超过此数量，Server将无法再接受连接，客户端会连接失败。避免服务器Accept太多连接，导致请求堆积
 
 
+采坑总结：
+1. [协程拓展冲突](https://wiki.swoole.com/wiki/page/851.html)，建议swoole 使用自己php 配置文件
+2. 框架中使用swoole，PDO 超时关闭，致使数据库操作失败，[建议封装mysql 连接池](https://github.com/buyingfei/swoole-share/blob/master/pool/swoole-mysql-pool.php)，封装自己数据库操作，保证断线mysql重连 
+3. [禁止使用exit/die](https://wiki.swoole.com/wiki/page/501.html),建议使用try-catch 捕捉异常
 
 
